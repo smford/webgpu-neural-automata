@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
+    <title>WebGPU Neural Cellular Automata | Self-Organizing Morphogenesis</title>
+    <meta name="description" content="High-performance Neural Cellular Automata simulator executing self-repairing biological morphogenesis inside WebGPU WGSL compute shaders.">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <div id="app-layout">
+        <!-- Header Laboratory Bar -->
+        <header id="lab-header">
+            <div class="brand-section">
+                <svg class="lab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="4" fill="currentColor"/>
+                    <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+                </svg>
+                <div class="brand-text">
+                    <h1>Neural <span>Cellular Automata</span></h1>
+                    <div class="brand-sub">WGSL Compute Shaders &bull; Synthetic Morphogenesis</div>
+                </div>
+            </div>
+
+            <!-- Telemetry Ribbon -->
+            <div class="header-telemetry">
+                <div class="telemetry-item">
+                    <span id="engine-badge" class="engine-badge">Detecting...</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">FPS:</span>
+                    <span id="val-fps" class="telemetry-value">--</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">Latency:</span>
+                    <span id="val-latency" class="telemetry-value">--</span>
+                    <span style="color:var(--text-muted);font-size:9px">ms</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">Living Cells:</span>
+                    <span id="val-cells" class="telemetry-value">--</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">VRAM:</span>
+                    <span id="val-memory" class="telemetry-value">--</span>
+                </div>
+            </div>
+
+            <!-- Quick Action Toolbar -->
+            <div class="header-actions">
+                <button id="btn-play-pause" class="btn-action active-run" title="Toggle Simulation (Space)">
+                    <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M14 19h4V5h-4v14zm-8 0h4V5H6v14z"/></svg>
+                    PAUSE
+                </button>
+                <button id="btn-step" class="btn-action" title="Execute Single Step">
+                    <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                    STEP
+                </button>
+                <button id="btn-reset" class="btn-action" title="Reset Organism Embryo">
+                    <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    RESEED
+                </button>
+                <button id="btn-clear" class="btn-action" title="Clear Grid">
+                    <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    CLEAR
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main id="workspace">
+            <!-- Sidebar Controls -->
+            <aside id="studio-sidebar">
+                <!-- Presets Section -->
+                <div class="sidebar-section">
+                    <div class="section-title">Ecosystem Presets</div>
+                    <div id="preset-cards-container" class="preset-grid">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                    <div class="specimen-summary">
+                        <div id="preset-name-display" class="specimen-name">Specimen Info</div>
+                        <div id="preset-desc-display" class="specimen-desc">Select an organism preset above to explore its self-healing dynamics.</div>
+                    </div>
+                </div>
+
+                <!-- Surgical & Culture Tools -->
+                <div class="sidebar-section">
+                    <div class="section-title">Surgical & Culture Toolsuite</div>
+                    <div class="tools-suite">
+                        <button class="tool-btn active" data-tool="0" title="Click & drag to sever tissues or carve wounds">
+                            <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                            Damage Scalpel
+                        </button>
+                        <button class="tool-btn" data-tool="1" title="Inoculate new embryonic stem cell clusters">
+                            <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                            Seed Pen
+                        </button>
+                        <button class="tool-btn" data-tool="2" title="Inject chaotic chemical morphogen fluctuations">
+                            <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+                            Mutator Brush
+                        </button>
+                        <button class="tool-btn" data-tool="3" title="Accelerate mitotic growth and fuel regeneration">
+                            <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                            Nutrient Catalyst
+                        </button>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Brush Radius</span>
+                            <span id="val-brush-radius" class="control-val">18 px</span>
+                        </div>
+                        <input id="slider-brush-radius" type="range" min="3" max="64" value="18">
+                    </div>
+                </div>
+
+                <!-- Simulation Settings -->
+                <div class="sidebar-section">
+                    <div class="section-title">Simulation Dynamics</div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Grid Resolution</label>
+                        <select id="select-resolution">
+                            <option value="256">256 &times; 256 (Ultra Fast)</option>
+                            <option value="512" selected>512 &times; 512 (Recommended)</option>
+                            <option value="1024">1024 &times; 1024 (High Definition)</option>
+                            <option value="2048">2048 &times; 2048 (Extreme Scale)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label">Compute Steps Per Frame</label>
+                        <select id="select-speed">
+                            <option value="1">1&times; (Slow Inspection)</option>
+                            <option value="2">2&times; (Natural Growth)</option>
+                            <option value="4" selected>4&times; (Balanced)</option>
+                            <option value="8">8&times; (Rapid Regeneration)</option>
+                            <option value="16">16&times; (Turbocharged)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Stochastic Update Rate</span>
+                            <span id="val-update-rate" class="control-val">50%</span>
+                        </div>
+                        <input id="slider-update-rate" type="range" min="0.1" max="1.0" step="0.05" value="0.5">
+                    </div>
+                </div>
+
+                <!-- Morphogen Optics & Inspection -->
+                <div class="sidebar-section">
+                    <div class="section-title">Microscopy & Optics</div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Visualization Spectrum</label>
+                        <select id="select-display-mode">
+                            <option value="0" selected>RGBA Specimen (Biological Composite)</option>
+                            <option value="1">Hidden Morphogen Channels (False-Color)</option>
+                            <option value="2">Alive Mask & Biomass Density (&alpha;)</option>
+                            <option value="3">Chemical Vector Gradient Field</option>
+                        </select>
+                    </div>
+
+                    <div id="group-channel-slider" class="control-group" style="display: none;">
+                        <div class="control-label">
+                            <span>Active Morphogen</span>
+                            <span id="val-channel" class="control-val">Channel 4</span>
+                        </div>
+                        <input id="slider-channel" type="range" min="4" max="15" value="4">
+                    </div>
+                </div>
+
+                <!-- Neural Weight Mutation Lab -->
+                <div class="sidebar-section">
+                    <div class="section-title">Neural Weight Mutation Lab</div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Mutation Magnitude</span>
+                            <span id="val-mutation" class="control-val">0.15</span>
+                        </div>
+                        <input id="slider-mutation" type="range" min="0.02" max="0.50" step="0.01" value="0.15">
+                    </div>
+                    <div class="btn-grid">
+                        <button id="btn-mutate-now" class="btn-action" style="justify-content:center;">
+                            INJECT MUTATION
+                        </button>
+                        <button id="btn-reset-weights" class="btn-action" style="justify-content:center;">
+                            RESET SYNAPSES
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Simulation Viewport -->
+            <section id="viewport-container">
+                <canvas id="sim-canvas"></canvas>
+
+                <!-- Floating Telemetry HUD Overlay -->
+                <div class="viewport-overlay">
+                    <div class="hud-row">
+                        <span>HARDWARE:</span>
+                        <span id="val-gpu" class="hud-val">WebGPU Device</span>
+                    </div>
+                    <div class="hud-row">
+                        <span>CYCLE COUNT:</span>
+                        <span id="val-steps" class="hud-val">0</span>
+                    </div>
+                    <div class="hud-row">
+                        <button id="btn-reset-view" class="btn-action" style="padding:3px 8px;font-size:9px;">
+                            RESET CAMERA
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Navigation Guidance -->
+                <div class="viewport-hint">
+                    <span>[L-Click / Drag]</span> Apply Selected Tool &bull; 
+                    <span>[R-Click / Shift+Drag]</span> Pan Viewport &bull; 
+                    <span>[Scroll Wheel]</span> Smooth Optical Zoom
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Application Bootstrap -->
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>
